@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khung presentation microsite</title>
+  <meta
+    name="description"
+    content="Microsite thuyet trinh tuong tac ve khung hoang kinh te, Market Failure va long tham cua thi truong."
+  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="site-shell">
+    <aside class="sidebar" aria-label="Dieu huong chinh">
+      <div class="sidebar__header">
+        <p class="sidebar__eyebrow">Microsite hoc thuat</p>
+        <h1 id="site-title" class="sidebar__title">Loading...</h1>
+        <p id="site-subtitle" class="sidebar__subtitle"></p>
+      </div>
+
+      <nav id="nav" class="nav-list" aria-label="Cac phan cua bai thuyet trinh"></nav>
+
+      <div class="sidebar__footer">
+        <p id="site-quote" class="sidebar__quote"></p>
+      </div>
+    </aside>
+
+    <div class="mobile-nav-wrap">
+      <div class="mobile-nav__header">
+        <p class="sidebar__eyebrow">Microsite hoc thuat</p>
+        <button id="mobile-nav-toggle" class="mobile-nav__toggle" type="button" aria-expanded="false" aria-controls="mobile-nav-list">
+          Menu
+        </button>
+      </div>
+      <div id="mobile-nav-list" class="mobile-nav__list" hidden></div>
+    </div>
+
+    <main id="app" class="app" tabindex="-1" aria-live="polite"></main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
