@@ -1,74 +1,92 @@
-# 1A KTVM MACRO
+# Trang thuyết trình `1a_ktvm`
 
-Microsite thuyet trinh tuong tac cho chu de **"Khung hoang Kinh te, Phe 1A: Market Failure & Long Tham cua Thi Truong"**. Project duoc lam bang `HTML + CSS + JavaScript thuan`, chay duoc khi mo local hoac deploy bang GitHub Pages.
+Đây là website tĩnh dùng để trình bày học thuật cho chủ đề **“Khủng hoảng Kinh tế, Phe 1A: Market Failure & Lòng tham của thị trường”**. Dự án được dựng bằng `HTML + CSS + JavaScript thuần`, tối ưu để mở trực tiếp bằng trình duyệt hoặc deploy bằng GitHub Pages.
 
-## Chay local
+## Chạy local
 
-Mo truc tiep `index.html`, hoac dung Live Server neu muon reload nhanh trong luc chinh giao dien.
+Bạn có thể dùng một trong hai cách:
 
-## Sua noi dung
+1. Mở trực tiếp `index.html` bằng trình duyệt.
+2. Mở thư mục dự án bằng VS Code rồi chạy `Live Server` nếu muốn tự reload khi chỉnh sửa.
 
-Toan bo noi dung chinh nam trong `data.js`, bao gom:
+## Chỉnh nội dung
 
-- metadata chung
-- glossary thuat ngu
-- sections
-- chart datasets
-- sources cho tung section
-- ghi chu chuan hoa du lieu
-- cau hinh vung anh / placeholder
+Phần lớn nội dung hiển thị nằm trong `data.js`, gồm:
 
-Neu muon doi text, so lieu, thu tu card, caption chart hoac nguon, hay sua truc tiep trong `data.js`.
+- metadata chung của site
+- tiêu đề, mô tả và text của từng phần
+- glossary thuật ngữ
+- dữ liệu biểu đồ
+- caption, note và panel nguồn
+- danh sách thành viên nhóm
+- đường dẫn ảnh hoặc placeholder
 
-## Sua nguon
+Nếu muốn sửa lời thoại, số liệu, caption biểu đồ, tên thành viên, vai trò trình bày hoặc text trong panel nguồn, hãy sửa trực tiếp trong `data.js`.
 
-Moi section co mang `sources` trong `data.js`. O do co:
+## Chỉnh nguồn
 
-- ten nguon ngan
-- du lieu nao lay tu nguon do
-- ghi chu logic chuan hoa neu co
+Mỗi phần có mảng `sources` trong `data.js`. Mỗi mục nguồn gồm:
 
-## Hinh anh va placeholder
+- tên file nguồn
+- dữ liệu hoặc luận điểm lấy từ nguồn đó
+- ghi chú logic chuẩn hóa nếu có
 
-Dat anh trong thu muc:
+Tên file nguồn có thể giữ nguyên đúng theo tài liệu gốc.
+
+## Ảnh và placeholder
+
+Ảnh nên đặt trong thư mục:
 
 - `assets/images/`
 
-Ten file anh mau dang duoc map san trong code:
+Các tên file mẫu đã được map sẵn:
 
 - `assets/images/cover-hero.jpg`
 - `assets/images/hook-worker.jpg`
+- `assets/images/framework-diagram.jpg`
 - `assets/images/hanoi-apartment.jpg`
+- `assets/images/bond-project-gap.jpg`
+- `assets/images/real-estate-bonds.jpg`
+- `assets/images/export-factory.jpg`
 - `assets/images/red-sea-logistics.jpg`
 - `assets/images/svb-bank.jpg`
 - `assets/images/lehman-2008.jpg`
-- `assets/images/export-factory.jpg`
-- `assets/images/real-estate-bonds.jpg`
-- `assets/images/bond-project-gap.jpg`
+- `assets/images/team-member.jpg`
 - `assets/images/final-synthesis.jpg`
 
-Neu file anh chua ton tai, layout van giu nguyen va hien thi placeholder card co nhan de thay.
+Nếu ảnh thật chưa có:
 
-Section hien dang dung placeholder mac dinh:
+- layout vẫn giữ nguyên
+- site sẽ hiện placeholder đồng bộ giao diện
+- người dùng chỉ cần thay file ảnh vào đúng đường dẫn hoặc sửa `path` trong `data.js`
 
-- cover
-- hook
-- co che 1, 2, 3
-- BDS Viet Nam
-- cu soc xuat khau
-- Bien Do
-- SVB
-- khung hoang 2008
-- ket luan
+Các phần hiện đang sẵn sàng thay ảnh:
 
-De thay anh:
-
-1. dat file anh that dung ten trong `assets/images/`
-2. hoac sua duong dan anh ngay trong object `media` cua section tuong ung trong `data.js`
+- Trang mở đầu
+- Mở đầu
+- Framework 4 tầng
+- Cơ chế 1, 2, 3
+- Bất động sản Việt Nam 2021-2025
+- Cú sốc xuất khẩu và lao động 2023
+- Biển Đỏ quý I/2024
+- SVB 2023
+- Khủng hoảng 2008
+- Thành viên nhóm
+- Kết luận
 
 ## Deploy GitHub Pages
 
-1. push toan bo file len branch `main`
-2. vao `Settings -> Pages`
-3. chon source la branch `main` va thu muc `/root`
-4. luu lai, GitHub Pages se build site tinh nay
+1. Đẩy toàn bộ file lên nhánh `main`.
+2. Vào `Settings` của repo trên GitHub.
+3. Chọn `Pages`.
+4. Ở mục `Build and deployment`, chọn:
+   - `Source`: `Deploy from a branch`
+   - `Branch`: `main`
+   - `Folder`: `/ (root)`
+5. Lưu lại và chờ GitHub Pages build site.
+
+## Lưu ý kỹ thuật
+
+- Tất cả text hiển thị được viết bằng tiếng Việt có dấu, trừ các thuật ngữ học thuật cần giữ tiếng Anh.
+- File dùng chuẩn UTF-8 để hiển thị đúng trên GitHub Pages.
+- Dự án không cần backend và không cần cài thêm framework.
