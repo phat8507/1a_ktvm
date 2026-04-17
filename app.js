@@ -4,78 +4,80 @@ const app = document.querySelector("#app");
 const nav = document.querySelector("#nav");
 const mobileNav = document.querySelector("#mobile-nav-list");
 const mobileToggle = document.querySelector("#mobile-nav-toggle");
+const loadingState = document.querySelector("#loading-state");
+const backToTop = document.querySelector("#back-to-top");
+
 const chartRegistry = new Map();
 const chartInstances = new Map();
 
 function setSiteMetadata() {
   document.title = `${siteData.metadata.title} | ${siteData.metadata.subtitle}`;
   document.querySelector("#site-title").textContent = siteData.metadata.title;
-  document.querySelector("#site-subtitle").textContent = `${siteData.metadata.subtitle} - ${siteData.metadata.group}, ${siteData.metadata.className}`;
+  document.querySelector("#site-subtitle").textContent =
+    `${siteData.metadata.subtitle} · ${siteData.metadata.group} · ${siteData.metadata.className}`;
   document.querySelector("#site-quote").textContent = siteData.metadata.quote;
+  backToTop.textContent = siteData.metadata.backToTop;
 }
 
 function annotateGlossary(text) {
   if (!text) return "";
-  const terms = Object.keys(siteData.glossary).sort((a, b) => b.length - a.length);
-  let result = text;
 
-  for (const term of terms) {
-    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    result = result.replace(
-      new RegExp(`\\[\\[${escaped}\\]\\]`, "g"),
-      `<button class="term-chip" type="button" data-term="${term}" aria-label="Giai thich ${term}">${term}<span class="term-chip__icon">i</span></button>`,
-    );
-  }
-
-  return result;
+  return Object.keys(siteData.glossary)
+    .sort((a, b) => b.length - a.length)
+    .reduce((result, term) => {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return result.replace(
+        new RegExp(`\\[\\[${escaped}\\]\\]`, "g"),
+        `<button class="term-chip" type="button" data-term="${term}" aria-label="Giải thích thuật ngữ ${term}">
+          <span>${term}</span>
+          <span class="term-chip__icon">i</span>
+        </button>`,
+      );
+    }, text);
 }
 
 function renderNavigation() {
-  const navMarkup = siteData.sections
+  const links = siteData.sections
     .map(
       (section, index) => `
         <a class="nav-link${index === 0 ? " is-active" : ""}" href="#${section.id}" data-target="${section.id}">
           <span class="nav-link__index">${String(index + 1).padStart(2, "0")}</span>
-          <span class="nav-link__label">${section.title}</span>
+          <span class="nav-link__meta">
+            <span class="nav-link__label">${section.navLabel}</span>
+            <span class="nav-link__title">${section.title}</span>
+          </span>
         </a>
       `,
     )
     .join("");
 
-  nav.innerHTML = navMarkup;
-  mobileNav.innerHTML = navMarkup;
+  nav.innerHTML = links;
+  mobileNav.innerHTML = links;
 }
 
 function renderMedia(section) {
   if (!section.media) return "";
 
   return `
-    <figure class="media-card" data-media-card>
-      <div class="media-card__frame">
-        <img
-          class="media-card__image"
-          src="./${section.media.path}"
-          alt="${section.media.alt}"
-          loading="lazy"
-        >
+    <figure class="media-card">
+      <div class="media-card__frame" data-media-frame>
+        <img class="media-card__image" src="./${section.media.path}" alt="${section.media.alt}" loading="lazy">
         <div class="media-card__placeholder">
-          <p class="media-card__placeholder-label">${section.media.label}</p>
-          <p class="media-card__placeholder-path">${section.media.path}</p>
-          <p class="media-card__placeholder-note">${section.media.hint}</p>
+          <p class="media-card__label">${section.media.label}</p>
+          <p class="media-card__path">${section.media.path}</p>
+          <p class="media-card__hint">${section.media.hint}</p>
         </div>
       </div>
     </figure>
   `;
 }
 
-function renderKeyPanel(section) {
+function renderInsightPanel(section) {
   return `
     <div class="panel-copy">
       ${section.intro.map((paragraph) => `<p>${annotateGlossary(paragraph)}</p>`).join("")}
-      <div class="panel-copy__points">
-        ${section.keyPoints
-          .map((point) => `<article class="mini-card"><p>${annotateGlossary(point)}</p></article>`)
-          .join("")}
+      <div class="mini-card-grid">
+        ${section.keyPoints.map((point) => `<article class="mini-card">${annotateGlossary(point)}</article>`).join("")}
       </div>
     </div>
   `;
@@ -99,28 +101,29 @@ function renderDataPanel(section) {
   `;
 }
 
-function renderChartVisual(visual, sectionId, isActive) {
+function renderChartVisual(sectionId, visual, active) {
   const chartId = `${sectionId}-${visual.chartId}`;
   chartRegistry.set(chartId, siteData.charts[visual.chartId]);
+  const chart = siteData.charts[visual.chartId];
 
   return `
-    <section class="visual-card${isActive ? " is-active" : ""}" data-visual-panel="${chartId}">
+    <section class="visual-card${active ? " is-active" : ""}" data-visual-panel="${chartId}">
       <header class="visual-card__header">
         <p class="visual-card__eyebrow">${visual.label}</p>
-        <h4>${siteData.charts[visual.chartId].title}</h4>
+        <h4>${chart.title}</h4>
       </header>
       <div class="chart-wrap">
-        <canvas id="${chartId}" role="img" aria-label="${siteData.charts[visual.chartId].title}"></canvas>
+        <canvas id="${chartId}" aria-label="${chart.title}" role="img"></canvas>
       </div>
-      <p class="visual-card__caption">${siteData.charts[visual.chartId].caption}</p>
-      <p class="visual-card__note">${siteData.charts[visual.chartId].note}</p>
+      <p class="visual-card__caption">${chart.caption}</p>
+      <p class="visual-card__note">${chart.note}</p>
     </section>
   `;
 }
 
-function renderTimelineVisual(visual, isActive) {
+function renderTimelineVisual(visual, active) {
   return `
-    <section class="visual-card${isActive ? " is-active" : ""}" data-visual-panel="${visual.label}">
+    <section class="visual-card${active ? " is-active" : ""}" data-visual-panel="${visual.label}">
       <header class="visual-card__header">
         <p class="visual-card__eyebrow">${visual.label}</p>
       </header>
@@ -140,9 +143,9 @@ function renderTimelineVisual(visual, isActive) {
   `;
 }
 
-function renderTimelineLanesVisual(visual, isActive) {
+function renderTimelineLanesVisual(visual, active) {
   return `
-    <section class="visual-card${isActive ? " is-active" : ""}" data-visual-panel="${visual.label}">
+    <section class="visual-card${active ? " is-active" : ""}" data-visual-panel="${visual.label}">
       <header class="visual-card__header">
         <p class="visual-card__eyebrow">${visual.label}</p>
       </header>
@@ -166,9 +169,9 @@ function renderTimelineLanesVisual(visual, isActive) {
   `;
 }
 
-function renderComparisonVisual(visual, isActive) {
+function renderComparisonVisual(visual, active) {
   return `
-    <section class="visual-card${isActive ? " is-active" : ""}" data-visual-panel="${visual.label}">
+    <section class="visual-card${active ? " is-active" : ""}" data-visual-panel="${visual.label}">
       <header class="visual-card__header">
         <p class="visual-card__eyebrow">${visual.label}</p>
       </header>
@@ -188,9 +191,9 @@ function renderComparisonVisual(visual, isActive) {
   `;
 }
 
-function renderFrameworkVisual(visual, isActive) {
+function renderFrameworkVisual(visual, active) {
   return `
-    <section class="visual-card${isActive ? " is-active" : ""}" data-visual-panel="${visual.label}">
+    <section class="visual-card${active ? " is-active" : ""}" data-visual-panel="${visual.label}">
       <header class="visual-card__header">
         <p class="visual-card__eyebrow">${visual.label}</p>
       </header>
@@ -210,9 +213,9 @@ function renderFrameworkVisual(visual, isActive) {
   `;
 }
 
-function renderRouteVisual(visual, isActive) {
+function renderRouteVisual(visual, active) {
   return `
-    <section class="visual-card${isActive ? " is-active" : ""}" data-visual-panel="${visual.label}">
+    <section class="visual-card${active ? " is-active" : ""}" data-visual-panel="${visual.label}">
       <header class="visual-card__header">
         <p class="visual-card__eyebrow">${visual.label}</p>
       </header>
@@ -232,9 +235,9 @@ function renderRouteVisual(visual, isActive) {
   `;
 }
 
-function renderQuoteVisual(visual, isActive) {
+function renderQuoteVisual(visual, active) {
   return `
-    <section class="visual-card visual-card--quote${isActive ? " is-active" : ""}" data-visual-panel="${visual.label}">
+    <section class="visual-card visual-card--quote${active ? " is-active" : ""}" data-visual-panel="${visual.label}">
       <header class="visual-card__header">
         <p class="visual-card__eyebrow">${visual.label}</p>
       </header>
@@ -243,52 +246,72 @@ function renderQuoteVisual(visual, isActive) {
   `;
 }
 
-function renderVisuals(section) {
+function renderTeamVisual(visual, active) {
+  return `
+    <section class="visual-card visual-card--team${active ? " is-active" : ""}" data-visual-panel="${visual.label}">
+      <header class="visual-card__header">
+        <p class="visual-card__eyebrow">${visual.label}</p>
+      </header>
+      <div class="team-grid">
+        ${visual.members
+          .map(
+            (member, index) => `
+              <article class="member-card">
+                <div class="member-card__avatar">
+                  <span>TV ${index + 1}</span>
+                  <p>Ảnh thành viên nhóm</p>
+                </div>
+                <div class="member-card__body">
+                  <p class="member-card__name">${member.name}</p>
+                  <p class="member-card__role">${member.role}</p>
+                  <p class="member-card__focus">${member.focus}</p>
+                </div>
+              </article>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderVisual(section, visual, index) {
+  const active = index === 0;
+  if (visual.type === "chart") return renderChartVisual(section.id, visual, active);
+  if (visual.type === "timeline") return renderTimelineVisual(visual, active);
+  if (visual.type === "timeline-lanes") return renderTimelineLanesVisual(visual, active);
+  if (visual.type === "comparison") return renderComparisonVisual(visual, active);
+  if (visual.type === "framework") return renderFrameworkVisual(visual, active);
+  if (visual.type === "route") return renderRouteVisual(visual, active);
+  if (visual.type === "team") return renderTeamVisual(visual, active);
+  return renderQuoteVisual(visual, active);
+}
+
+function renderChartPanel(section) {
   const tabs = section.visuals
     .map(
       (visual, index) => `
-        <button
-          class="visual-tab${index === 0 ? " is-active" : ""}"
-          type="button"
-          data-visual-target="${visual.type === "chart" ? `${section.id}-${visual.chartId}` : visual.label}"
-        >
+        <button class="visual-tab${index === 0 ? " is-active" : ""}" type="button"
+          data-visual-target="${visual.type === "chart" ? `${section.id}-${visual.chartId}` : visual.label}">
           ${visual.label}
         </button>
       `,
     )
     .join("");
 
-  const content = section.visuals
-    .map((visual, index) => {
-      const isActive = index === 0;
-
-      if (visual.type === "chart") return renderChartVisual(visual, section.id, isActive);
-      if (visual.type === "timeline") return renderTimelineVisual(visual, isActive);
-      if (visual.type === "timeline-lanes") return renderTimelineLanesVisual(visual, isActive);
-      if (visual.type === "comparison") return renderComparisonVisual(visual, isActive);
-      if (visual.type === "framework") return renderFrameworkVisual(visual, isActive);
-      if (visual.type === "route") return renderRouteVisual(visual, isActive);
-      if (visual.type === "quote") return renderQuoteVisual(visual, isActive);
-
-      return "";
-    })
-    .join("");
+  const panels = section.visuals.map((visual, index) => renderVisual(section, visual, index)).join("");
 
   return `
     <div class="visual-switcher">
-      <div class="visual-tabs" role="tablist" aria-label="Lua chon visual cho ${section.title}">
-        ${tabs}
-      </div>
-      <div class="visual-panels">
-        ${content}
-      </div>
+      <div class="visual-tabs">${tabs}</div>
+      <div class="visual-panels">${panels}</div>
     </div>
   `;
 }
 
-function renderSourcesPanel(section) {
+function renderSourcePanel(section) {
   return `
-    <div class="sources-drawer">
+    <div class="source-grid">
       ${section.sources
         .map(
           (source) => `
@@ -303,290 +326,343 @@ function renderSourcesPanel(section) {
   `;
 }
 
+function renderCoverActions() {
+  return `
+    <div class="hero-actions">
+      <button class="hero-action hero-action--primary" type="button" data-scroll-to="hook">${siteData.metadata.ctaStart}</button>
+      <button class="hero-action" type="button" data-scroll-to="team">${siteData.metadata.ctaTeam}</button>
+    </div>
+  `;
+}
+
 function renderSection(section, index) {
-  const previous = siteData.sections[index - 1];
-  const next = siteData.sections[index + 1];
+  const panels = [
+    { key: "insight", label: siteData.metadata.panelLabels.insight, content: renderInsightPanel(section) },
+    { key: "data", label: siteData.metadata.panelLabels.data, content: renderDataPanel(section) },
+    { key: "chart", label: siteData.metadata.panelLabels.chart, content: renderChartPanel(section) },
+    { key: "source", label: siteData.metadata.panelLabels.source, content: renderSourcePanel(section) },
+  ];
 
   return `
-    <section id="${section.id}" class="slide-section" data-section="${section.id}">
+    <section id="${section.id}" class="slide-section slide-section--${section.layout} accent-${section.accent}" data-section="${section.id}">
       <div class="slide-section__header">
-        <div>
+        <div class="slide-section__headline">
           <p class="slide-section__eyebrow">${section.eyebrow}</p>
           <h2 class="slide-section__title">${section.title}</h2>
           <p class="slide-section__subtitle">${section.subtitle}</p>
         </div>
-        <div class="slide-section__key">
-          <p>${annotateGlossary(section.keyMessage)}</p>
-        </div>
+        <aside class="slide-section__key">
+          <span>${siteData.metadata.sectionBadge}</span>
+          <p>${section.keyMessage}</p>
+        </aside>
       </div>
-
       <div class="slide-section__hero">
-        <div class="slide-section__text">
-          ${renderKeyPanel(section)}
+        <div class="slide-section__body">
+          ${section.id === "cover" ? renderCoverActions() : ""}
+          ${renderMedia(section)}
+          <div class="panel-switcher">
+            <div class="panel-switcher__tabs">
+              ${panels
+                .map(
+                  (panel, panelIndex) => `
+                    <button class="panel-tab${panelIndex === 0 ? " is-active" : ""}" type="button" data-panel-target="${panel.key}">
+                      ${panel.label}
+                    </button>
+                  `,
+                )
+                .join("")}
+            </div>
+            <div class="panel-switcher__content">
+              ${panels
+                .map(
+                  (panel, panelIndex) => `
+                    <div class="panel-surface${panelIndex === 0 ? " is-active" : ""}" data-panel="${panel.key}">
+                      ${panel.content}
+                    </div>
+                  `,
+                )
+                .join("")}
+            </div>
+          </div>
         </div>
-        ${renderMedia(section)}
       </div>
-
-      <div class="action-row" role="tablist" aria-label="Dieu huong panel cho ${section.title}">
-        <button class="action-pill is-active" type="button" data-view="key">Xem y chinh</button>
-        <button class="action-pill" type="button" data-view="data">Xem so lieu</button>
-        <button class="action-pill" type="button" data-view="chart">Xem chart</button>
-        <button class="action-pill" type="button" data-view="source">Xem nguon</button>
-      </div>
-
-      <div class="panel-stack">
-        <section class="content-panel is-active" data-panel="key">
-          ${renderKeyPanel(section)}
-        </section>
-        <section class="content-panel" data-panel="data">
-          ${renderDataPanel(section)}
-        </section>
-        <section class="content-panel" data-panel="chart">
-          ${renderVisuals(section)}
-        </section>
-        <section class="content-panel" data-panel="source">
-          ${renderSourcesPanel(section)}
-        </section>
-      </div>
-
-      <div class="section-pagination">
-        <button class="pager" type="button" ${previous ? `data-jump="${previous.id}"` : "disabled"}>Previous</button>
-        <button class="pager" type="button" ${next ? `data-jump="${next.id}"` : "disabled"}>Next</button>
+      <div class="section-nav">
+        ${
+          index > 0
+            ? `<button class="section-nav__button" type="button" data-scroll-to="${siteData.sections[index - 1].id}">${siteData.metadata.previous}</button>`
+            : `<span class="section-nav__spacer"></span>`
+        }
+        ${
+          index < siteData.sections.length - 1
+            ? `<button class="section-nav__button section-nav__button--primary" type="button" data-scroll-to="${siteData.sections[index + 1].id}">${siteData.metadata.next}</button>`
+            : `<button class="section-nav__button section-nav__button--primary" type="button" data-scroll-to="cover">${siteData.metadata.backToTop}</button>`
+        }
       </div>
     </section>
   `;
 }
 
-function renderSections() {
-  app.innerHTML = `
-    <header class="app-intro">
-      <p class="app-intro__eyebrow">${siteData.metadata.group} - ${siteData.metadata.className}</p>
+function renderApp() {
+  const introMarkup = `
+    <section class="app-intro">
+      <p class="app-intro__eyebrow">${siteData.metadata.sectionBadge}</p>
       <h1>${siteData.metadata.title}</h1>
-      <p>${siteData.metadata.subtitle}</p>
-      <p class="app-intro__note">${siteData.metadata.footerNote}</p>
-    </header>
-    ${siteData.sections.map(renderSection).join("")}
+      <p>${siteData.metadata.heroIntro}</p>
+    </section>
   `;
+
+  const sectionsMarkup = siteData.sections.map((section, index) => renderSection(section, index)).join("");
+  app.innerHTML = `${introMarkup}${sectionsMarkup}`;
+  if (loadingState) loadingState.hidden = true;
 }
 
-function paletteForChart(type) {
-  if (type === "doughnut" || type === "pie") return ["#f2c14e", "#13233d", "#5b7c99", "#e9eef5"];
-  return ["#f2c14e"];
-}
-
-function createChart(canvasId, config) {
-  if (!window.Chart) return;
-  const canvas = document.getElementById(canvasId);
-  if (!canvas || chartInstances.has(canvasId)) return;
-
-  const colors = paletteForChart(config.type);
-  const datasets = config.data.datasets.map((dataset, index) => ({
-    ...dataset,
-    borderColor: dataset.type === "line" || config.type === "line" || config.type === "mixed" ? colors[index] || "#f2c14e" : "#f2c14e",
-    backgroundColor:
-      config.type === "doughnut" || config.type === "pie"
-        ? colors
-        : dataset.type === "bar" || config.type === "bar" || config.type === "mixed"
-          ? ["#f2c14e", "#335c81", "#88a0b7", "#e9eef5"]
-          : "rgba(242, 193, 78, 0.2)",
-    pointBackgroundColor: "#f2c14e",
-    pointBorderColor: "#081421",
-    borderWidth: 2,
-  }));
-
-  const options = {
+function buildBaseChartConfig(chart) {
+  return {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 900, easing: "easeOutQuart" },
     plugins: {
       legend: {
+        display: true,
         labels: {
-          color: "#eef3f8",
-          font: { family: "Manrope", size: 12 },
+          color: "#20304c",
+          font: { family: "Be Vietnam Pro", size: 12, weight: "600" },
+          boxWidth: 12,
+          usePointStyle: true,
         },
       },
       tooltip: {
-        backgroundColor: "#081421",
-        titleColor: "#fefefe",
-        bodyColor: "#d3deea",
+        backgroundColor: "rgba(14, 27, 52, 0.92)",
+        titleColor: "#fffdf8",
+        bodyColor: "#fffdf8",
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        borderWidth: 1,
       },
     },
-    scales:
-      config.type === "doughnut" || config.type === "pie"
-        ? {}
-        : {
-            x: {
-              ticks: { color: "#c2d3e3" },
-              grid: { color: "rgba(194, 211, 227, 0.08)" },
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { color: "#c2d3e3" },
-              title: {
-                display: Boolean(config.options?.yTitle),
-                text: config.options?.yTitle,
-                color: "#c2d3e3",
-              },
-              grid: { color: "rgba(194, 211, 227, 0.08)" },
-            },
-          },
+    scales: {},
+  };
+}
+
+function createChart(chartId, chart) {
+  if (!window.Chart || chartInstances.has(chartId)) return;
+  const canvas = document.getElementById(chartId);
+  if (!canvas) return;
+
+  const palette = ["#f05d52", "#ff9b71", "#1d3557", "#d6a84f", "#4f8fbf", "#edc988"];
+  const baseOptions = buildBaseChartConfig(chart);
+  const commonDataset = {
+    borderColor: palette[0],
+    backgroundColor: chart.type === "line" ? "rgba(240, 93, 82, 0.16)" : palette,
+    borderWidth: 2,
+    pointRadius: 4,
+    pointHoverRadius: 6,
   };
 
-  if (config.options?.dualAxis) {
-    options.scales.y1 = {
-      beginAtZero: true,
-      position: "right",
-      ticks: { color: "#f2c14e" },
-      title: {
-        display: Boolean(config.options?.y1Title),
-        text: config.options?.y1Title,
-        color: "#f2c14e",
-      },
-      grid: { drawOnChartArea: false },
+  const datasets = chart.data.datasets.map((dataset, index) => ({
+    ...commonDataset,
+    ...dataset,
+    backgroundColor:
+      chart.type === "bar"
+        ? dataset.backgroundColor || palette[index % palette.length]
+        : chart.type === "doughnut" || chart.type === "pie"
+          ? palette
+          : dataset.backgroundColor || commonDataset.backgroundColor,
+    borderColor: dataset.borderColor || palette[index % palette.length],
+  }));
+
+  if (chart.options?.yTitle) {
+    baseOptions.scales.y = {
+      beginAtZero: chart.type !== "line",
+      grid: { color: "rgba(29, 53, 87, 0.08)" },
+      ticks: { color: "#51607a" },
+      title: { display: true, text: chart.options.yTitle, color: "#20304c" },
     };
   }
 
-  const chart = new window.Chart(canvas, {
-    type: config.type === "mixed" ? "bar" : config.type,
-    data: { labels: config.data.labels, datasets },
-    options,
+  baseOptions.scales.x = {
+    grid: { display: false },
+    ticks: { color: "#51607a" },
+  };
+
+  if (chart.options?.dualAxis) {
+    baseOptions.scales = {
+      x: { grid: { display: false }, ticks: { color: "#51607a" } },
+      y: {
+        beginAtZero: true,
+        grid: { color: "rgba(29, 53, 87, 0.08)" },
+        ticks: { color: "#51607a" },
+        title: { display: true, text: chart.options.yTitle, color: "#20304c" },
+      },
+      y1: {
+        beginAtZero: true,
+        position: "right",
+        grid: { drawOnChartArea: false },
+        ticks: { color: "#51607a" },
+        title: { display: true, text: chart.options.y1Title, color: "#20304c" },
+      },
+    };
+  }
+
+  const instance = new window.Chart(canvas, {
+    type: chart.type === "mixed" ? "bar" : chart.type,
+    data: { labels: chart.data.labels, datasets },
+    options: {
+      ...baseOptions,
+      elements: { line: { tension: chart.options?.tension ?? 0.25 } },
+    },
   });
 
-  chartInstances.set(canvasId, chart);
+  chartInstances.set(chartId, instance);
 }
 
-function bootCharts() {
-  chartRegistry.forEach((config, canvasId) => createChart(canvasId, config));
+function initializeCharts() {
+  for (const [chartId, chart] of chartRegistry.entries()) {
+    createChart(chartId, chart);
+  }
 }
 
-function setupPanelToggles() {
-  document.querySelectorAll(".slide-section").forEach((sectionEl) => {
-    const pills = sectionEl.querySelectorAll(".action-pill");
-    const panels = sectionEl.querySelectorAll(".content-panel");
-
-    pills.forEach((pill) => {
-      pill.addEventListener("click", () => {
-        pills.forEach((button) => button.classList.toggle("is-active", button === pill));
-        panels.forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === pill.dataset.view));
+function setupPanelSwitchers() {
+  document.querySelectorAll(".panel-switcher").forEach((switcher) => {
+    const tabs = switcher.querySelectorAll(".panel-tab");
+    const panels = switcher.querySelectorAll(".panel-surface");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.panelTarget;
+        tabs.forEach((item) => item.classList.toggle("is-active", item === tab));
+        panels.forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === target));
       });
     });
   });
-}
 
-function setupVisualTabs() {
   document.querySelectorAll(".visual-switcher").forEach((switcher) => {
     const tabs = switcher.querySelectorAll(".visual-tab");
     const panels = switcher.querySelectorAll(".visual-card");
-
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
+        const target = tab.dataset.visualTarget;
         tabs.forEach((item) => item.classList.toggle("is-active", item === tab));
-        panels.forEach((panel) => {
-          panel.classList.toggle("is-active", panel.dataset.visualPanel === tab.dataset.visualTarget);
-        });
+        panels.forEach((panel) => panel.classList.toggle("is-active", panel.dataset.visualPanel === target));
       });
     });
   });
 }
 
-function setupPagination() {
-  document.querySelectorAll("[data-jump]").forEach((button) => {
+function setupSmoothScroll() {
+  document.querySelectorAll("[data-scroll-to]").forEach((button) => {
     button.addEventListener("click", () => {
-      document.getElementById(button.dataset.jump)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const target = document.getElementById(button.dataset.scrollTo);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      const mobileContainer = mobileNav.closest(".mobile-nav");
+      mobileContainer?.classList.remove("is-open");
+      mobileNav.hidden = true;
+      mobileToggle.setAttribute("aria-expanded", "false");
     });
   });
-}
 
-function setupNavigation() {
-  const allNavLinks = document.querySelectorAll(".nav-link");
-
-  allNavLinks.forEach((link) => {
+  document.querySelectorAll(".nav-link").forEach((link) => {
     link.addEventListener("click", (event) => {
       event.preventDefault();
-      document.getElementById(link.dataset.target)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (!mobileNav.hidden) {
-        mobileNav.hidden = true;
-        mobileToggle.setAttribute("aria-expanded", "false");
-      }
+      const target = document.getElementById(link.dataset.target);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      const mobileContainer = mobileNav.closest(".mobile-nav");
+      mobileContainer?.classList.remove("is-open");
+      mobileNav.hidden = true;
+      mobileToggle.setAttribute("aria-expanded", "false");
     });
   });
+}
 
+function setupActiveSections() {
+  const links = [...document.querySelectorAll(".nav-link")];
   const observer = new IntersectionObserver(
     (entries) => {
-      const visible = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-      if (!visible) return;
-
-      allNavLinks.forEach((link) => {
-        link.classList.toggle("is-active", link.dataset.target === visible.target.id);
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const id = entry.target.id;
+        links.forEach((link) => link.classList.toggle("is-active", link.dataset.target === id));
       });
     },
-    {
-      rootMargin: "-20% 0px -55% 0px",
-      threshold: [0.2, 0.35, 0.5, 0.7],
-    },
+    { rootMargin: "-35% 0px -45% 0px", threshold: 0.1 },
   );
 
   document.querySelectorAll(".slide-section").forEach((section) => observer.observe(section));
 }
 
 function setupGlossaryTooltips() {
+  const tooltip = document.createElement("div");
+  tooltip.className = "glossary-tooltip";
+  document.body.appendChild(tooltip);
+
   document.addEventListener("click", (event) => {
-    const chip = event.target.closest(".term-chip");
-    document.querySelectorAll(".term-tooltip").forEach((tooltip) => tooltip.remove());
+    const trigger = event.target.closest(".term-chip");
+    if (!trigger) {
+      tooltip.classList.remove("is-visible");
+      return;
+    }
 
-    if (!chip) return;
-
-    const tooltip = document.createElement("div");
-    tooltip.className = "term-tooltip";
-    tooltip.textContent = siteData.glossary[chip.dataset.term];
-    document.body.appendChild(tooltip);
-
-    const rect = chip.getBoundingClientRect();
-    tooltip.style.top = `${window.scrollY + rect.bottom + 8}px`;
-    tooltip.style.left = `${Math.max(16, Math.min(window.innerWidth - 320, window.scrollX + rect.left))}px`;
-
-    const dismiss = (dismissEvent) => {
-      if (dismissEvent.target.closest(".term-chip") === chip) return;
-      tooltip.remove();
-      document.removeEventListener("click", dismiss);
-    };
-
-    setTimeout(() => document.addEventListener("click", dismiss), 0);
+    const term = trigger.dataset.term;
+    tooltip.innerHTML = `<p class="glossary-tooltip__term">${term}</p><p>${siteData.glossary[term]}</p>`;
+    const rect = trigger.getBoundingClientRect();
+    tooltip.style.top = `${window.scrollY + rect.bottom + 10}px`;
+    tooltip.style.left = `${Math.min(window.innerWidth - 280, rect.left + window.scrollX)}px`;
+    tooltip.classList.add("is-visible");
   });
 }
 
 function setupMediaFallbacks() {
   document.querySelectorAll(".media-card__image").forEach((image) => {
-    image.addEventListener("load", () => image.closest(".media-card")?.classList.add("is-loaded"));
-    image.addEventListener("error", () => {
-      image.closest(".media-card")?.classList.remove("is-loaded");
-      image.removeAttribute("src");
-    });
+    const frame = image.closest("[data-media-frame]");
+    if (!frame) return;
+
+    image.addEventListener("error", () => frame.classList.add("is-missing"));
+    if (image.complete && image.naturalWidth === 0) frame.classList.add("is-missing");
+    if (image.complete && image.naturalWidth > 0) frame.classList.add("has-image");
+    image.addEventListener("load", () => frame.classList.add("has-image"));
   });
 }
 
 function setupMobileNav() {
   mobileToggle.addEventListener("click", () => {
-    const expanded = mobileToggle.getAttribute("aria-expanded") === "true";
-    mobileToggle.setAttribute("aria-expanded", String(!expanded));
-    mobileNav.hidden = expanded;
+    const container = mobileToggle.closest(".mobile-nav");
+    const isOpen = container.classList.toggle("is-open");
+    mobileNav.hidden = !isOpen;
+    mobileToggle.setAttribute("aria-expanded", String(isOpen));
   });
+}
+
+function setupBackToTop() {
+  backToTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  window.addEventListener("scroll", () => {
+    backToTop.classList.toggle("is-visible", window.scrollY > 600);
+  });
+}
+
+function revealSections() {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add("is-visible");
+      });
+    },
+    { threshold: 0.16 },
+  );
+
+  document.querySelectorAll(".slide-section, .app-intro").forEach((node) => observer.observe(node));
 }
 
 function init() {
   setSiteMetadata();
   renderNavigation();
-  renderSections();
-  bootCharts();
-  setupPanelToggles();
-  setupVisualTabs();
-  setupPagination();
-  setupNavigation();
+  renderApp();
+  initializeCharts();
+  setupPanelSwitchers();
+  setupSmoothScroll();
+  setupActiveSections();
   setupGlossaryTooltips();
   setupMediaFallbacks();
   setupMobileNav();
+  setupBackToTop();
+  revealSections();
 }
 
 init();
