@@ -1,4 +1,4 @@
-# 1A KTVM Microsite
+# 1A KTVM MACRO
 
 Microsite thuyet trinh tuong tac cho chu de **"Khung hoang Kinh te, Phe 1A: Market Failure & Long Tham cua Thi Truong"**. Project duoc lam bang `HTML + CSS + JavaScript thuan`, chay duoc khi mo local hoac deploy bang GitHub Pages.
 
